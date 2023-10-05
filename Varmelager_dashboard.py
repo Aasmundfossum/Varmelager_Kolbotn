@@ -15,6 +15,8 @@ with open("styles/main.css") as f:
 
 st.title('Driftsdata for sesongvarmelager 🥵🥶')
 
+tidshorisont = st.selectbox('Tidshorisont',options=['Siste 24 timer', 'Siste 7 dager', 'Siste 30 dager', 'Siste 12 måneder','All data'])
+
 filnavn = 'Trd_2023-06-27.csv'
 filnavn2 = 'Trd_2023-06-27 (1).csv'
 
@@ -100,8 +102,20 @@ slutt_indeks = int(slutt_indeks[0])
 relevante_lufttemp = df_lufttemp.iloc[start_indeks:slutt_indeks+1,:]
 
 # Plottefunksjoner
+if tidshorisont == 'Siste 24 timer':
+    startindeks = -24
+elif tidshorisont == 'Siste 7 dager':
+    startindeks = -168
+elif tidshorisont == 'Siste 30 dager':
+    startindeks = -720
+elif tidshorisont == 'Siste 12 måneder':
+    startindeks = -8760
+elif tidshorisont == 'All data':
+    startindeks = 0
+
+
 def plottefunksjon2stk(x_data,x_navn,y_data1,y_navn1,y_data2,y_navn2,yakse_navn,tittel):
-    til_plot = pd.DataFrame({x_navn : x_data, y_navn1 : y_data1, y_navn2 : y_data2})
+    til_plot = pd.DataFrame({x_navn : x_data[startindeks:], y_navn1 : y_data1[startindeks:], y_navn2 : y_data2[startindeks:]})
     fig = px.line(til_plot, x=x_navn, y=[y_navn1,y_navn2], title=tittel, color_discrete_sequence=['#367A2F', '#FFC358'])
     fig.update_layout(xaxis_title=x_navn, yaxis_title=yakse_navn,legend_title=None)
     #st.plotly_chart(fig)
@@ -109,8 +123,8 @@ def plottefunksjon2stk(x_data,x_navn,y_data1,y_navn1,y_data2,y_navn2,yakse_navn,
 
 def plottefunksjon_2akser(x_data, x_navn, y_data1, y_navn1, y_data2, y_navn2, yakse_navn, tittel):
     fig = make_subplots(specs=[[{"secondary_y": True}]])
-    fig.add_trace(go.Scatter(x=x_data, y=y_data1, mode="lines", name=y_navn1, line=dict(color='#367A2F')), secondary_y=False)
-    fig.add_trace(go.Scatter(x=x_data, y=y_data2, mode="lines", name=y_navn2, line=dict(color='#FFC358')), secondary_y=True)
+    fig.add_trace(go.Scatter(x=x_data[startindeks:], y=y_data1[startindeks:], mode="lines", name=y_navn1, line=dict(color='#367A2F')), secondary_y=False)
+    fig.add_trace(go.Scatter(x=x_data[startindeks:], y=y_data2[startindeks:], mode="lines", name=y_navn2, line=dict(color='#FFC358')), secondary_y=True)
     fig.update_layout(title=tittel, xaxis_title=x_navn, yaxis_title=yakse_navn, legend_title=None)
     fig.update_yaxes(title_text=y_navn1, secondary_y=False)
     fig.update_yaxes(title_text=y_navn2, secondary_y=True)
@@ -118,14 +132,14 @@ def plottefunksjon_2akser(x_data, x_navn, y_data1, y_navn1, y_data2, y_navn2, ya
     return fig
 
 def plottefunksjon3stk(x_data,x_navn,y_data1,y_navn1,y_data2,y_navn2,y_data3,y_navn3,yakse_navn,tittel):
-    til_plot = pd.DataFrame({x_navn : x_data, y_navn1 : y_data1, y_navn2 : y_data2,  y_navn3 : y_data3})
+    til_plot = pd.DataFrame({x_navn : x_data[startindeks:], y_navn1 : y_data1[startindeks:], y_navn2 : y_data2[startindeks:],  y_navn3 : y_data3[startindeks:]})
     fig = px.line(til_plot, x=x_navn, y=[y_navn1,y_navn2,y_navn3], title=tittel, color_discrete_sequence=['#367A2F', '#C2CF9F', '#FFC358', '#FFE7BC'])
     fig.update_layout(xaxis_title=x_navn, yaxis_title=yakse_navn,legend_title=None)
     #st.plotly_chart(fig)
     return fig
 
 def plottefunksjon4stk(x_data,x_navn,y_data1,y_navn1,y_data2,y_navn2,y_data3,y_navn3,y_data4,y_navn4,yakse_navn,tittel):
-    til_plot = pd.DataFrame({x_navn : x_data, y_navn1 : y_data1, y_navn2 : y_data2,  y_navn3 : y_data3,  y_navn4 : y_data4})
+    til_plot = pd.DataFrame({x_navn : x_data[startindeks:], y_navn1 : y_data1[startindeks:], y_navn2 : y_data2[startindeks:],  y_navn3 : y_data3[startindeks:],  y_navn4 : y_data4[startindeks:]})
     fig = px.line(til_plot, x=x_navn, y=[y_navn1,y_navn2,y_navn3,y_navn4], title=tittel, color_discrete_sequence=['#367A2F', '#C2CF9F', '#FFC358', '#FFE7BC'])
     fig.update_layout(xaxis_title=x_navn, yaxis_title=yakse_navn,legend_title=None)
     #st.plotly_chart(fig)
@@ -133,25 +147,29 @@ def plottefunksjon4stk(x_data,x_navn,y_data1,y_navn1,y_data2,y_navn2,y_data3,y_n
 
 ## Figurer:
 # Baner
-fig1 = plottefunksjon2stk(x_data=df['tid'],
+fig1 = plottefunksjon4stk(x_data=df['tid'],
                    x_navn='Tid',
                    y_data1=df['temp_tilbane1'],
-                   y_navn1='Temperatur til bane',
-                   y_data2=df['temp_frabane1'],
-                   y_navn2='Temperatur fra bane',
+                   y_navn1='Temperatur til bane 1',
+                   y_data2=df['temp_tilbane2'],
+                   y_navn2='Temperatur til bane 2',
+                   y_data3=df['temp_frabane1'],
+                   y_navn3='Temperatur fra bane 1',
+                   y_data4=df['temp_frabane2'],
+                   y_navn4='Temperatur fra bane 2',
                    yakse_navn='Temperatur (\u2103)',
-                   tittel='Tur- og returtemperaturer for bane 1')
+                   tittel='Tur- og returtemperaturer for baner')
 st.plotly_chart(fig1)
 
-fig2 = plottefunksjon2stk(x_data=df['tid'],
-                   x_navn='Tid',
-                   y_data1=df['temp_tilbane2'],
-                   y_navn1='Temperatur til banen',
-                   y_data2=df['temp_frabane2'],
-                   y_navn2='Temperatur fra banen',
-                   yakse_navn='Temperatur (\u2103)',
-                   tittel='Tur- og returtemperaturer for bane 2')
-st.plotly_chart(fig2)
+#fig2 = plottefunksjon2stk(x_data=df['tid'],
+#                   x_navn='Tid',
+#                   y_data1=df['temp_tilbane2'],
+#                   y_navn1='Temperatur til banen',
+#                   y_data2=df['temp_frabane2'],
+#                   y_navn2='Temperatur fra banen',
+#                   yakse_navn='Temperatur (\u2103)',
+#                   tittel='Tur- og returtemperaturer for bane 2')
+#st.plotly_chart(fig2)
 
 # Ukjent
 fig3 = plottefunksjon2stk(x_data=df['tid'],
@@ -165,25 +183,29 @@ fig3 = plottefunksjon2stk(x_data=df['tid'],
 st.plotly_chart(fig3)
 
 # Brønner
-fig4 = plottefunksjon2stk(x_data=df['tid'],
+fig4 = plottefunksjon4stk(x_data=df['tid'],
                    x_navn='Tid',
                    y_data1=df['temp_tilbronn40'],
-                   y_navn1='Temperatur til brønn',
-                   y_data2=df['temp_frabronn40'],
-                   y_navn2='Temperatur fra brønn',
+                   y_navn1='Temperatur til 40 brønner',
+                   y_data2=df['temp_tilbronn20'],
+                   y_navn2='Temperatur til 20 brønner',
+                    y_data3=df['temp_frabronn40'],
+                   y_navn3='Temperatur fra 40 brønner',
+                   y_data4=df['temp_frabronn20'],
+                   y_navn4='Temperatur fra 20 brønner',
                    yakse_navn='Temperatur (\u2103)',
-                   tittel='Tur- og returtemperaturer for brønn 1')
+                   tittel='Tur- og returtemperaturer for brønner')
 st.plotly_chart(fig4)
 
-fig5 = plottefunksjon2stk(x_data=df['tid'],
-                   x_navn='Tid',
-                   y_data1=df['temp_tilbronn20'],
-                   y_navn1='Temperatur til brønn',
-                   y_data2=df['temp_frabronn20'],
-                   y_navn2='Temperatur fra brønn',
-                   yakse_navn='Temperatur (\u2103)',
-                   tittel='Tur- og returtemperaturer for brønn 2')
-st.plotly_chart(fig5)
+#fig5 = plottefunksjon2stk(x_data=df['tid'],
+#                   x_navn='Tid',
+#                   y_data1=df['temp_tilbronn20'],
+#                   y_navn1='Temperatur til brønn',
+#                   y_data2=df['temp_frabronn20'],
+#                   y_navn2='Temperatur fra brønn',
+#                   yakse_navn='Temperatur (\u2103)',
+#                   tittel='Tur- og returtemperaturer for brønn 2')
+#st.plotly_chart(fig5)
 
 fig6 = plottefunksjon4stk(x_data=df['tid'],
                    x_navn='Tid',
@@ -220,25 +242,39 @@ fig8 = plottefunksjon_2akser(x_data=df2['tid'],
 st.plotly_chart(fig8)
 
 # Varmepumpe
-fig9 = plottefunksjon2stk(x_data=df2['tid'],
-                   x_navn='Tid',
-                   y_data1=df2['temp_VP_varm_ut'],
-                   y_navn1='Temperatur ut varm side',
-                   y_data2=df2['temp_VP_varm_inn'],
-                   y_navn2='Temperatur inn varm side',
-                   yakse_navn='Temperatur (\u2103)',
-                   tittel='Temperaturer varm side av VP')
-st.plotly_chart(fig9)
+#fig9 = plottefunksjon2stk(x_data=df2['tid'],
+#                   x_navn='Tid',
+#                   y_data1=df2['temp_VP_varm_ut'],
+#                   y_navn1='Temperatur ut varm side',
+#                   y_data2=df2['temp_VP_varm_inn'],
+#                   y_navn2='Temperatur inn varm side',
+#                   yakse_navn='Temperatur (\u2103)',
+#                   tittel='Temperaturer varm side av VP')
+#st.plotly_chart(fig9)
 
-fig10 = plottefunksjon2stk(x_data=df2['tid'],
+#fig10 = plottefunksjon2stk(x_data=df2['tid'],
+#                   x_navn='Tid',
+#                   y_data1=df2['temp_VP_kald_ut'],
+#                   y_navn1='Temperatur ut kald side',
+#                   y_data2=df2['temp_VP_kald_inn'],
+#                   y_navn2='Temperatur inn kald side',
+#                   yakse_navn='Temperatur (\u2103)',
+#                   tittel='Temperaturer kald side av VP')
+#st.plotly_chart(fig10)
+
+fig11 = plottefunksjon4stk(x_data=df2['tid'],
                    x_navn='Tid',
                    y_data1=df2['temp_VP_kald_ut'],
                    y_navn1='Temperatur ut kald side',
                    y_data2=df2['temp_VP_kald_inn'],
                    y_navn2='Temperatur inn kald side',
+                   y_data3=df2['temp_VP_varm_ut'],
+                   y_navn3='Temperatur ut varm side',
+                   y_data4=df2['temp_VP_varm_inn'],
+                   y_navn4='Temperatur inn varm side',
                    yakse_navn='Temperatur (\u2103)',
-                   tittel='Temperaturer kald side av VP')
-st.plotly_chart(fig10)
+                   tittel='Temperaturer inn og ut av VP')
+st.plotly_chart(fig11)
 
 
 
