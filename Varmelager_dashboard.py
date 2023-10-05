@@ -15,7 +15,7 @@ with open("styles/main.css") as f:
 
 st.title('Driftsdata for sesongvarmelager 🥵🥶')
 
-tidshorisont = st.selectbox('Tidshorisont',options=['Siste 24 timer', 'Siste 7 dager', 'Siste 30 dager', 'Siste 12 måneder','All data'])
+tidshorisont = st.selectbox('Tidshorisont',options=['Siste 24 timer', 'Siste 7 dager', 'Siste 30 dager', 'Siste 3 måneder', 'Siste 12 måneder','All data'])
 
 filnavn = 'Trd_2023-06-27.csv'
 filnavn2 = 'Trd_2023-06-27 (1).csv'
@@ -27,7 +27,7 @@ def temp_to_datetime(timestamp):
     return pd.to_datetime(timestamp, format="%d.%m.%Y %H:%M")
 
 
-
+# DEL I AV DATASETT
 df = pd.read_csv(filnavn, 
         sep=";", 
         skiprows=[0,1,2,3,4,5,6,7,8,9,10,11,12,13], 
@@ -61,7 +61,7 @@ vaesketemp_bronn = (snittemp_tilbronn+snittemp_frabronn)/2
 tempforskjell_bronn = snittemp_tilbronn-snittemp_frabronn
 effekt_tilbronn = tempforskjell_bronn*6*4.2
 
-
+# DEL II AV DATASETT
 df2 = pd.read_csv(filnavn2, 
         sep=";", 
         skiprows=[0,1,2,3,4,5,6,7,8,9,10,11,12,13], 
@@ -71,6 +71,14 @@ df2 = pd.read_csv(filnavn2,
 df2['tid'] = df2['tid']+' '+df2['klokkeslett']
 df2['tid'] = df2['tid'].apply(custom_to_datetime)
 df2 = df2.drop('klokkeslett',axis=1)
+
+temp_forskjell_kald = df2['temp_VP_kald_inn']-df2['temp_VP_kald_ut']
+temp_forskjell_varm = df2['temp_VP_varm_ut']-df2['temp_VP_varm_inn']
+
+varmekap = 4200 #J/kgK
+massestrom = 6 #kg/s
+
+effekt_VP = varmekap*massestrom*temp_forskjell_varm/1000  # kW
 
 
 # Leser inn lufttemperaturer
@@ -100,6 +108,7 @@ start_indeks = int(start_indeks[0])
 slutt_indeks = np.where(df_lufttemp['tid'] == sluttid)
 slutt_indeks = int(slutt_indeks[0])
 relevante_lufttemp = df_lufttemp.iloc[start_indeks:slutt_indeks+1,:]
+relevante_lufttemp = relevante_lufttemp.reset_index()
 
 # Plottefunksjoner
 if tidshorisont == 'Siste 24 timer':
@@ -108,6 +117,8 @@ elif tidshorisont == 'Siste 7 dager':
     startindeks = -168
 elif tidshorisont == 'Siste 30 dager':
     startindeks = -720
+elif tidshorisont == 'Siste 3 måneder':
+    startindeks = -2208
 elif tidshorisont == 'Siste 12 måneder':
     startindeks = -8760
 elif tidshorisont == 'All data':
@@ -119,6 +130,18 @@ def plottefunksjon2stk(x_data,x_navn,y_data1,y_navn1,y_data2,y_navn2,yakse_navn,
     fig = px.line(til_plot, x=x_navn, y=[y_navn1,y_navn2], title=tittel, color_discrete_sequence=['#367A2F', '#FFC358'])
     fig.update_layout(xaxis_title=x_navn, yaxis_title=yakse_navn,legend_title=None)
     #st.plotly_chart(fig)
+    return fig
+
+def plottefunksjon_bar(x_data, x_navn, y_data1, y_navn1, y_data2, y_navn2, yakse_navn, tittel):
+    fig = make_subplots(specs=[[{"secondary_y": True}]])
+    
+    fig.add_trace(go.Bar(x=x_data[startindeks:], y=y_data1[startindeks:], name=y_navn1, marker=dict(color='#367A2F')))
+    fig.add_trace(go.Scatter(x=x_data[startindeks:], y=y_data2[startindeks:], name=y_navn2, marker=dict(color='#FFC358')), secondary_y=True)
+    
+    fig.update_layout(title=tittel, xaxis_title=x_navn, yaxis_title=yakse_navn, legend_title=None)
+    fig.update_yaxes(title_text=y_navn1, secondary_y=False)
+    fig.update_yaxes(title_text=y_navn2, secondary_y=True)
+    
     return fig
 
 def plottefunksjon_2akser(x_data, x_navn, y_data1, y_navn1, y_data2, y_navn2, yakse_navn, tittel):
@@ -215,7 +238,7 @@ fig6 = plottefunksjon4stk(x_data=df['tid'],
                    y_navn2='Temperatur fra brønn',
                    y_data3=vaesketemp_bronn,
                    y_navn3='Gj. snittlig væsketemp.',
-                   y_data4=df_lufttemp['lufttemp'],
+                   y_data4=relevante_lufttemp['lufttemp'],
                    y_navn4='Lufttemperatur.',
                    yakse_navn='Temperatur (\u2103)',
                    tittel='Gjennomsnittlige tur- og returtemperaturer for brønner')
@@ -276,5 +299,12 @@ fig11 = plottefunksjon4stk(x_data=df2['tid'],
                    tittel='Temperaturer inn og ut av VP')
 st.plotly_chart(fig11)
 
-
-
+fig12 = plottefunksjon_bar(x_data=df2['tid'],
+                   x_navn='Tid',
+                   y_data1=effekt_VP,
+                   y_navn1='Effekt (kW)',
+                   y_data2=relevante_lufttemp['lufttemp'],
+                   y_navn2='Lufttemperatur (\u2103)',
+                   yakse_navn='Effekt (kW)',
+                   tittel='Effekt fra varmepumpen til brønner')
+st.plotly_chart(fig12)
